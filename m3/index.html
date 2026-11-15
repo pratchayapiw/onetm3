@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>บทเรียนภาษาอังกฤษ ม.3 · Get Involved!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="unit6/app.css">
+<style>
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:16px}
+.u{position:relative;background:#fff;border-radius:24px;padding:18px;box-shadow:var(--shadow);border-top:6px solid var(--c);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px}
+.u .no{font:700 15px Kanit;color:var(--c)}
+.u b{font:600 22px Kanit}
+.u small{color:var(--muted);font-size:14px;line-height:1.45}
+.u .tag{position:absolute;top:14px;right:14px;font:600 12px Kanit;border-radius:10px;padding:2px 10px;background:var(--c);color:#fff}
+.u.off{opacity:.62}
+.u.off .tag{background:#b9a6b0}
+.u img{width:84px;height:66px;object-fit:contain}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><span class="logo"><img src="assets/icons/openbook.png" alt=""><span><b>English M.3 · Get Involved!</b><small>อ23102 ภาษาอังกฤษพื้นฐาน 6 · ภาคเรียนที่ 2/2569</small></span></span></div></header>
+<main class="wrap">
+  <div class="hero"><img src="assets/icons/u6.png" alt=""><div>
+    <p class="pill">บทเรียนสำเร็จรูป + สไลด์สอน</p><h1>เรียน ฝึก ทบทวน ได้ด้วยตัวเอง</h1>
+    <p class="q">แต่ละบทมี 6 สถานี: คำศัพท์ · ฟัง · อ่าน · ไวยากรณ์ · พูด · เขียน และข้อสอบหลังเรียน · คะแนนเก็บบทละ 10 คะแนน</p></div></div>
+  <div class="units" id="units"></div>
+  <p class="muted" style="margin-top:18px;font-size:15px">เลขบทตรงกับหนังสือ Get Involved! ม.3 · เทอม 2 เรียน Unit 6–8 · Grammar bootcamp p116 · Pronunciation p128</p>
+</main>
+<script>
+const UNITS = [
+  [1, "Stories", "Simple present · frequency · present progressive", "#e2457a", 1],
+  [2, "Then and now", "was/were · could · simple past · used to", "#e8763a", 1],
+  [3, "Goals", "Past progressive · when and while", "#e7a21d", 1],
+  [4, "Spend!", "Quantifiers · comparatives and superlatives", "#8b5cd6", 1],
+  [5, "A better place", "will · might · first and zero conditional", "#4f9b3a", 1],
+  [6, "Experience", "Present perfect · ever and never · who/where/which", "#3a7fd0", 2, "unit6/"],
+  [7, "My stuff", "Present perfect with for and since · time expressions", "#d9467a", 2],
+  [8, "Responsibility", "have to · will and going to", "#3a8fd0", 2]
+];
+document.getElementById("units").innerHTML = UNITS.map(([n, t, g, c, term, href]) => href
+  ? `<a class="u" href="${href}" style="--c:${c}"><span class="tag">เปิดเรียน</span><img src="assets/icons/u6.png" alt=""><span class="no">บทที่ ${n} · Unit ${n}</span><b>${t}</b><small>${g}</small><small>เทอม ${term}</small></a>`
+  : `<div class="u off" style="--c:${c}"><span class="tag">เร็ว ๆ นี้</span><span class="no">บทที่ ${n} · Unit ${n}</span><b>${t}</b><small>${g}</small><small>เทอม ${term}</small></div>`).join("");
+</script>
+</body>
+</html>

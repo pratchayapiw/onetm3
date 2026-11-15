@@ -125,7 +125,7 @@ async function micTry(btn, target, outEl, pass = 0.7) {
     if (outEl) { outEl.className = "heard " + (ok ? "ok" : "bad"); outEl.innerHTML = `ได้ยินว่า: “${esc(best.t)}” · ตรง ${Math.round(best.s * 100)}% ${ok ? "✅ เยี่ยม!" : "🔁 ลองอีกครั้ง ฟังตัวอย่างก่อนก็ได้"}`; }
     return Object.assign(best, { ok, alts });
   } catch (e) {
-    if (outEl) { outEl.className = "heard bad"; outEl.textContent = SR_MSG[e] || "ตรวจเสียงไม่ได้ ลองใหม่อีกครั้ง"; }
+    if (outEl) { outEl.className = "heard bad"; outEl.textContent = window.M3_PREVIEW ? "หน้าตัวอย่างนี้ใช้ไมโครโฟนไม่ได้ เปิดลิงก์ GitHub Pages เพื่อฝึกพูดจริง" : (SR_MSG[e] || "ตรวจเสียงไม่ได้ ลองใหม่อีกครั้ง"); }
     return null;
   } finally { btn.classList.remove("rec"); btn.innerHTML = old; }
 }
@@ -250,7 +250,7 @@ function viewStart() {
 
 /* ---------- map ---------- */
 const STATION_STEPS = {
-  vocab: [["learn", "เรียนรู้"], ["pick", "เลือก 2 ตัวเลือก"], ["review", "ทบทวน 70%"], ["context", "ศัพท์ในประโยค"], ["quiz", "ข้อสอบย่อย"]],
+  vocab: [["see", "ดูรูป ฟัง พูดตาม"], ["hear", "ฟังแล้วเลือก 2 ตัวเลือก"], ["learn", "ดูรูป + คำ พูดตาม"], ["review", "ทบทวน 70%"], ["context", "ศัพท์ในประโยค"], ["quiz", "ข้อสอบย่อย"]],
   listening: [["practice", "ฝึกฟัง"], ["quiz", "ข้อสอบย่อย"]],
   reading: [["read", "อ่าน"], ["own", "ตอบด้วยคำของเรา"], ["quiz", "ข้อสอบย่อย"]],
   grammar: [["discover", "ค้นพบกฎ"], ["mistakes", "จุดที่ผิดบ่อย"], ["build", "แต่งประโยค 4 ระดับ"], ["quiz", "ข้อสอบย่อย"]],
@@ -306,41 +306,91 @@ function station(k, stepKey) {
 const STATIONS = {};
 
 /* ---------- VOCABULARY ---------- */
+function vSetBar(el, onChange) {
+  const cur = LS.get(pkey() + ":vset", U.vocabSets[0].k);
+  const bar = document.createElement("div"); bar.className = "steps"; bar.style.marginBottom = "4px";
+  bar.innerHTML = U.vocabSets.map(x => `<button data-v="${x.k}" class="${x.k === cur ? "on" : ""}">${esc(x.name)} · ${esc(x.th)} (${U.vocab.filter(w => w.set === x.k).length})</button>`).join("");
+  bar.onclick = e => { const b = e.target.closest("button"); if (b) { LS.set(pkey() + ":vset", b.dataset.v); onChange(); } };
+  el.appendChild(bar);
+  return U.vocab.filter(w => w.set === cur);
+}
+function vSetNext(k, step) {
+  const cur = LS.get(pkey() + ":vset", U.vocabSets[0].k), i = U.vocabSets.findIndex(x => x.k === cur);
+  const done = LS.get(pkey() + ":vdone:" + step, []); if (!done.includes(cur)) done.push(cur); LS.set(pkey() + ":vdone:" + step, done);
+  if (done.length >= U.vocabSets.length) markStep(k, step);
+  return i < U.vocabSets.length - 1 ? U.vocabSets[i + 1] : null;
+}
 STATIONS.vocab = {
-  learn(el, k) {
-    let i = 0;
+  see(el, k) {
+    el.innerHTML = ""; const words = vSetBar(el, () => STATIONS.vocab.see(el, k));
+    const box = document.createElement("div"); el.appendChild(box); let i = 0;
     const render = () => {
-      const w = U.vocab[i];
-      el.innerHTML = `<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">คำที่ ${i + 1} / ${U.vocab.length}</span>
-        <span class="muted" style="font-size:15px">ดูรูป → ฟัง → พูดตาม → อ่านประโยค</span></div>
+      const w = words[i]; let shown = false;
+      box.innerHTML = `<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">ภาพที่ ${i + 1} / ${words.length}</span>
+        <span class="muted" style="font-size:15px">ดูรูป → ฟังเสียง → พูดตาม (ยังไม่เห็นคำ)</span></div>
+        <div class="fc" style="margin-top:10px"><div class="pic">${w.pic}</div><div>
+          <div class="w" id="ww" style="color:#d9c3cb">? ? ?</div><div class="th" id="wt">&nbsp;</div>
+          <div class="row" style="margin:12px 0"><button class="btn p" id="pl">🔊 ฟัง</button><button class="btn" id="sl">🐢 ช้า</button><button class="btn g mic" id="mc">🎤 พูดตาม</button><button class="btn" id="rv">👁 ดูคำ</button></div>
+          <div id="hd"></div></div></div>
+        <div class="qnav"><button class="btn" id="pv" ${i === 0 ? "disabled" : ""}>← ก่อนหน้า</button><button class="btn p" id="nx">${i === words.length - 1 ? "จบชุดนี้ →" : "ภาพต่อไป →"}</button></div></div>`;
+      const reveal = () => { if (shown) return; shown = true; $("#ww", box).textContent = w.w; $("#ww", box).style.color = ""; $("#wt", box).textContent = w.th; };
+      setTimeout(() => say(w.w), 200);
+      $("#pl", box).onclick = () => say(w.w); $("#sl", box).onclick = () => say(w.w, { rate: 0.55 });
+      $("#rv", box).onclick = reveal;
+      $("#mc", box).onclick = async e => { const r = await micTry(e.currentTarget, w.w, $("#hd", box), 0.66); if (r) reveal(); };
+      $("#pv", box).onclick = () => { i--; render(); };
+      $("#nx", box).onclick = () => { if (i < words.length - 1) { i++; render(); } else {
+        const nx = vSetNext(k, "see");
+        box.innerHTML = `<div class="card result"><h3>จบชุดนี้แล้ว 🎉</h3><p>${nx ? `ต่อด้วยชุด ${esc(nx.name)} หรือไปฝึกฟังแล้วเลือกคำ` : "ครบทุกชุดแล้ว"}</p>
+          <div class="row" style="justify-content:center">${nx ? `<button class="btn" id="ns">ชุดต่อไป: ${esc(nx.name)}</button>` : ""}<button class="btn p" id="go">ฟังแล้วเลือก 2 ตัวเลือก →</button></div></div>`;
+        const ns = $("#ns", box); if (ns) ns.onclick = () => { LS.set(pkey() + ":vset", nx.k); STATIONS.vocab.see(el, k); };
+        $("#go", box).onclick = () => station(k, "hear");
+      } };
+    };
+    render();
+  },
+  hear(el, k) {
+    el.innerHTML = ""; const words = vSetBar(el, () => STATIONS.vocab.hear(el, k));
+    const box = document.createElement("div"); el.appendChild(box);
+    const items = shuffle(words).map(w => {
+      const pool = words.length > 1 ? words : U.vocab;
+      const other = shuffle(pool.filter(x => x !== w))[0]; const o = shuffle([w.w, other.w]);
+      return { audio: w.w, q: "🎧 ฟังเสียง แล้วเลือกคำที่ได้ยิน", o, a: o.indexOf(w.w), why: `${w.pic}  ${w.w} = ${w.th}` };
+    });
+    quiz(box, items, { title: "ฟังแล้วเลือก", two: true, onDone: (s, m) => {
+      const nx = vSetNext(k, "hear");
+      box.innerHTML = `<div class="card result"><div class="big">${s}/${m}</div><p>${s / m >= 0.7 ? "ฟังได้แม่นมาก!" : "ลองฟังชุดนี้อีกรอบ"}</p>
+        <div class="row" style="justify-content:center"><button class="btn" id="ag">ฟังชุดนี้อีกรอบ</button>${nx ? `<button class="btn" id="ns">ชุดต่อไป: ${esc(nx.name)}</button>` : ""}<button class="btn p" id="go">ดูรูป + คำ พูดตาม →</button></div></div>`;
+      $("#ag", box).onclick = () => STATIONS.vocab.hear(el, k);
+      const ns = $("#ns", box); if (ns) ns.onclick = () => { LS.set(pkey() + ":vset", nx.k); STATIONS.vocab.hear(el, k); };
+      $("#go", box).onclick = () => station(k, "learn");
+    } });
+  },
+  learn(el, k) {
+    el.innerHTML = ""; const words = vSetBar(el, () => STATIONS.vocab.learn(el, k));
+    const box = document.createElement("div"); el.appendChild(box); let i = 0;
+    const render = () => {
+      const w = words[i];
+      box.innerHTML = `<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">คำที่ ${i + 1} / ${words.length}</span>
+        <span class="muted" style="font-size:15px">ดูรูป + คำ → ฟัง → พูดตาม → อ่านประโยค</span></div>
         <div class="fc" style="margin-top:10px"><div class="pic">${w.pic}</div><div>
           <div class="w">${esc(w.w)}</div><div class="th">${esc(w.th)}</div>
           <div class="row" style="margin:12px 0"><button class="btn p" id="pl">🔊 ฟัง</button><button class="btn" id="sl">🐢 ช้า</button><button class="btn g mic" id="mc">🎤 พูดตาม</button></div>
           <div id="hd"></div>
-          <div class="ex">📝 ${esc(w.ex)} <button class="btn s" id="pe">🔊</button></div></div></div>
-        <div class="qnav"><button class="btn" id="pv" ${i === 0 ? "disabled" : ""}>← ก่อนหน้า</button><button class="btn p" id="nx">${i === U.vocab.length - 1 ? "จบ ไปขั้นเลือกคำ →" : "คำต่อไป →"}</button></div></div>`;
+          <div class="ex">📝 ${esc(w.ex)} <button class="btn s" id="pe">🔊</button> <button class="btn s g mic" id="me">🎤</button></div><div id="he"></div></div></div>
+        <div class="qnav"><button class="btn" id="pv" ${i === 0 ? "disabled" : ""}>← ก่อนหน้า</button><button class="btn p" id="nx">${i === words.length - 1 ? "จบชุดนี้ →" : "คำต่อไป →"}</button></div></div>`;
       setTimeout(() => say(w.w), 200);
-      $("#pl", el).onclick = () => say(w.w); $("#sl", el).onclick = () => say(w.w, { rate: 0.55 });
-      $("#pe", el).onclick = () => say(w.ex);
-      $("#mc", el).onclick = e => micTry(e.currentTarget, w.w, $("#hd", el), 0.66);
-      $("#pv", el).onclick = () => { i--; render(); };
-      $("#nx", el).onclick = () => { if (i < U.vocab.length - 1) { i++; render(); } else { markStep(k, "learn"); station(k, "pick"); } };
+      $("#pl", box).onclick = () => say(w.w); $("#sl", box).onclick = () => say(w.w, { rate: 0.55 });
+      $("#pe", box).onclick = () => say(w.ex);
+      $("#mc", box).onclick = e => micTry(e.currentTarget, w.w, $("#hd", box), 0.66);
+      $("#me", box).onclick = e => micTry(e.currentTarget, w.ex, $("#he", box), 0.7);
+      $("#pv", box).onclick = () => { i--; render(); };
+      $("#nx", box).onclick = () => { if (i < words.length - 1) { i++; render(); } else {
+        const nx = vSetNext(k, "learn");
+        if (nx) { LS.set(pkey() + ":vset", nx.k); toast("ต่อด้วยชุด " + nx.name); STATIONS.vocab.learn(el, k); } else station(k, "review");
+      } };
     };
     render();
-  },
-  pick(el, k) {
-    const words = shuffle(U.vocab).slice(0, 12);
-    const items = words.map(w => {
-      const other = shuffle(U.vocab.filter(x => x !== w))[0];
-      const o = shuffle([w.w, other.w]);
-      return { pic: w.pic, audio: w.w, q: `ฟังและดูรูป: คำไหนถูก? <span class="muted">(${esc(w.th)})</span>`, o, a: o.indexOf(w.w) };
-    });
-    quiz(el, items, { title: "เลือก 2 ตัวเลือก", two: true, onDone: (s, m) => {
-      markStep(k, "pick");
-      el.innerHTML = `<div class="card result"><div class="big">${s}/${m}</div><p>ฝึกเลือกศัพท์เสร็จแล้ว ต่อไปทบทวนให้จำได้อย่างน้อย 70%</p>
-        <div class="row" style="justify-content:center"><button class="btn" id="ag">ฝึกอีกรอบ</button><button class="btn p" id="go">ทบทวน 70% →</button></div></div>`;
-      $("#ag", el).onclick = () => STATIONS.vocab.pick(el, k); $("#go", el).onclick = () => station(k, "review");
-    } });
   },
   review(el, k) {
     const st = LS.get(pkey() + ":recall", {});   // word -> {r:right, n:seen}
@@ -487,7 +537,7 @@ STATIONS.grammar = {
     const G = U.grammar; let i = 0;
     const render = () => {
       const d = G.discover[i];
-      el.innerHTML = `<div class="card qcard"><span class="qn">Discovery guide · ขั้นที่ ${i + 1} / ${G.discover.length}</span>
+      el.innerHTML = `<div class="card qcard"><span class="qn">Discovery guide · ขั้นที่ ${i + 1} / ${G.discover.length}</span> <span class="lv lv${d.lv === 1 ? 1 : d.lv === 2 ? 2 : 4}">${["", "ง่าย", "กลาง", "ยาก"][d.lv]}</span> <b>${esc(d.topic)}</b>
         <h3 style="margin:6px 0 10px">1) สังเกตตัวอย่าง</h3><ul class="ex-list">${d.show.map(x => `<li>${x} <button class="btn s" data-say="${esc(x.replace(/<[^>]+>/g, ""))}">🔊</button></li>`).join("")}</ul>
         <h3 style="margin:6px 0 10px">2) ตอบคำถาม</h3><div class="qt" style="font-size:21px">${esc(d.q)}</div>
         <div class="opts">${d.o.map((x, n) => `<button class="opt" data-k="${n}">${esc(x)}</button>`).join("")}</div>
