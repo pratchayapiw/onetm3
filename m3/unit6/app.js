@@ -278,6 +278,9 @@ function viewMap() {
       <a class="st ${P.post ? "done" : ""}" style="--c:var(--c-posttest);text-decoration:none" href="#posttest"><span class="n">7</span>
         <img src="${ICON("trophy")}" alt=""><b>Post-test</b><small>ข้อสอบหลังเรียน 20 ข้อ · วิเคราะห์จุดที่ต้องพัฒนา</small>
         <span class="stat">${P.post ? `ทำแล้ว ${P.post.s}/20` : "ยังไม่ได้ทำ"}</span></a>
+      <a class="st" style="--c:var(--rose);text-decoration:none" href="#slides"><span class="n">📽️</span>
+        <img src="${ICON("u6")}" alt=""><b>สไลด์บทเรียน</b><small>เปิดดูสไลด์ทุกหน้า เลือกหน้าได้ และกดดูเฉลยแบบฝึกเพื่อทบทวนเอง</small>
+        <span class="stat">${(window.SLIDES || []).length} หน้า</span></a>
     </div>`;
   show("map");
 }
@@ -813,7 +816,25 @@ function viewSummary() {
 
 /* ================= TEACHER ================= */
 let TV = { tab: "slides", i: 0, pin: "", rows: null };
+const TEACHER_HASH = "70300ccd47da1a93cc88b1fe027be4dd37727d3d7805f238dd5009f1a9a87d8a";
+async function sha(t) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join(""); }
+function teacherOk() { try { return sessionStorage.getItem("m3:t") === "1"; } catch (e) { return TV.ok; } }
+function teacherGate() {
+  const v = $("#v-teacher");
+  v.innerHTML = `<div class="sh"><img src="${ICON("clipboard")}" alt=""><div><span class="k">โหมดครู</span><h2>ใส่รหัสครู</h2></div></div>
+    <div class="card" style="max-width:480px"><p class="muted">โหมดครูมีโน้ตการสอน เฉลย และผลนักเรียน</p>
+    <form id="tg" class="row"><input class="inp" id="tc" type="password" inputmode="numeric" autocomplete="off" placeholder="รหัสครู" style="flex:1"><button class="btn p">เข้าโหมดครู</button></form><div id="te"></div></div>`;
+  show("teacher"); $("#tc").focus();
+  $("#tg").onsubmit = async e => {
+    e.preventDefault(); const c = $("#tc").value.trim(); let ok = false;
+    try { ok = (await sha("m3-teacher:" + c)) === TEACHER_HASH; } catch (er) { ok = false; }
+    if (!ok) { $("#te").innerHTML = `<div class="fb bad">รหัสไม่ถูกต้อง</div>`; return; }
+    TV.ok = true; TV.pin = c; try { sessionStorage.setItem("m3:t", "1"); } catch (er) {}
+    viewTeacher();
+  };
+}
 function viewTeacher() {
+  if (!teacherOk()) return teacherGate();
   const v = $("#v-teacher");
   v.innerHTML = `<div class="sh"><img src="${ICON("clipboard")}" alt=""><div><span class="k">โหมดครู</span><h2>Unit 6 · สไลด์สอนและผลนักเรียน</h2></div></div>
     <div class="steps">${[["slides", "📽️ สไลด์สอน"], ["results", "📊 ผลนักเรียน"], ["guide", "📘 โครงสร้างบทเรียน"]].map(([k, t]) => `<button data-t="${k}" class="${TV.tab === k ? "on" : ""}">${t}</button>`).join("")}</div><div id="tb"></div>`;
@@ -821,20 +842,104 @@ function viewTeacher() {
   show("teacher");
   ({ slides: tSlides, results: tResults, guide: tGuide })[TV.tab]($("#tb", v));
 }
-function tSlides(el) {
+/* ---------- animated answer reveal for exercise slides ---------- */
+const SLIDE_KEYS = {
+  match: { type: "match", ans: ["E", "B", "F", "C", "A", "D"] },
+  practice1: { type: "blank", ans: ["has baked", "haven't seen", "has flown", "have eaten", "haven't visited", "has won"] },
+  practice2: { type: "blank", ans: ["who", "where", "which", "where", "who", "which"] },
+  exit: { type: "blank", ans: ["swum", "has never eaten", "haven't", "gone", "who"] }
+};
+function prepAnswers(frame, sid) {
+  const K = SLIDE_KEYS[sid]; if (!K) return [];
+  const items = [];
+  if (K.type === "blank") {
+    const walker = document.createTreeWalker(frame, NodeFilter.SHOW_TEXT); const nodes = [];
+    while (walker.nextNode()) if (walker.currentNode.nodeValue.includes("____")) nodes.push(walker.currentNode);
+    let n = 0;
+    nodes.forEach(t => {
+      const parts = t.nodeValue.split("____"); const frag = document.createDocumentFragment();
+      parts.forEach((txt, j) => {
+        frag.appendChild(document.createTextNode(txt));
+        if (j < parts.length - 1 && n < K.ans.length) {
+          const w = document.createElement("span"); w.className = "kx";
+          w.innerHTML = `<span class="kb">____</span><span class="ka">${esc(K.ans[n])}</span>`;
+          frag.appendChild(w); n++;
+        }
+      });
+      t.parentNode.replaceChild(frag, t);
+    });
+  } else if (K.type === "match") {
+    const left = Array.from(frame.querySelectorAll("p")).filter(p => /^\s*[1-6]\./.test(p.textContent)).slice(0, 6);
+    left.forEach((p, n) => p.insertAdjacentHTML("beforeend", ` <span class="kx"><span class="kb"></span><span class="ka">→ ${esc(K.ans[n])}</span></span>`));
+  }
+  return Array.from(frame.querySelectorAll(".kx"));
+}
+function sentenceOf(el) {
+  const box = el.closest("li,p,div"); if (!box) return "";
+  const c = box.cloneNode(true); c.querySelectorAll(".kb").forEach(x => x.remove());
+  return c.textContent.replace(/^\s*\d+\.\s*/, "").replace(/ของ|คือ/g, " ").replace(/\s+/g, " ").trim();
+}
+function revealOne(x, speak) {
+  if (!x || x.classList.contains("on")) return;
+  x.classList.add("on");
+  const fx = document.createElement("span"); fx.className = "kfx"; fx.textContent = "✨"; x.appendChild(fx); setTimeout(() => fx.remove(), 900);
+  if (speak) setTimeout(() => say(sentenceOf(x)), 350);
+}
+function slideTitle(h) { const m = h.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/); return m ? m[1].replace(/<br\s*\/?>/g, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : ""; }
+function slideViewer(el, teacher) {
   const S = window.SLIDES || [];
-  el.innerHTML = `<div class="sv-full" id="svf"><div class="sv-stage" id="stg"><div class="sv-frame" id="frm"></div><button class="sv-tap l" id="tl" aria-label="ก่อนหน้า"></button><button class="sv-tap r" id="tr" aria-label="ถัดไป"></button></div></div>
-    <div class="qnav"><button class="btn" id="pv">←</button><span class="counter" id="ct"></span><div class="row"><button class="btn" id="nt">📝 โน้ตครู</button><button class="btn p" id="fs">⛶ เต็มจอ</button><button class="btn" id="nx">→</button></div></div>
-    <div class="notes hide" id="nts"></div><p class="muted" style="font-size:14px">← → / Space เปลี่ยนสไลด์ · F เต็มจอ · N โน้ตครู (โน้ตไม่แสดงตอนเต็มจอ)</p>`;
+  const keyName = teacher ? "ti" : "si";
+  let cur = LS.get(pkey() + ":" + keyName, 0);
+  el.innerHTML = `<div class="spick-bar"><button class="btn s" id="pkt">☰ เลือกหน้าสไลด์</button><div class="spick-row" id="pkr">${S.map((x, n) => `<button data-n="${n}" title="${esc(slideTitle(x.html))}">${n + 1}</button>`).join("")}</div></div>
+    <div class="spick hide" id="pk">${S.map((x, n) => `<button data-n="${n}"><b>${n + 1}</b><span>${esc(slideTitle(x.html) || "Slide " + (n + 1))}</span>${SLIDE_KEYS[x.id] ? '<i>เฉลย</i>' : ""}</button>`).join("")}</div>
+    <div class="sv-full" id="svf"><div class="sv-stage" id="stg"><div class="sv-frame" id="frm"></div><button class="sv-tap l" id="tl" aria-label="ก่อนหน้า"></button><button class="sv-tap r" id="tr" aria-label="ถัดไป"></button></div></div>
+    <div class="qnav"><button class="btn" id="pv">← ก่อนหน้า</button><span class="counter" id="ct"></span><div class="row">${teacher ? `<button class="btn" id="nt">📝 โน้ตครู</button>` : ""}<button class="btn p" id="fs">⛶ เต็มจอ</button><button class="btn" id="nx">ถัดไป →</button></div></div>
+    <div class="row hide" id="kbar" style="margin-top:10px"><button class="btn p" id="k1">✨ ${teacher ? "เฉลยทีละข้อ" : "ดูเฉลยทีละข้อ"}</button><button class="btn" id="ka">เฉลยทั้งหมด</button><button class="btn" id="kh">ซ่อนเฉลย</button>
+      <label class="row" style="gap:6px;font-size:15px"><input type="checkbox" id="ksp" checked> 🔊 อ่านประโยคเฉลย</label><span class="counter" id="kc"></span></div>
+    ${teacher ? `<div class="notes hide" id="nts"></div>` : `<p class="tip" style="margin-top:12px">💡 ลองทำแบบฝึกในสไลด์เองก่อน แล้วค่อยกด “ดูเฉลยทีละข้อ”</p>`}
+    <p class="muted" style="font-size:14px">← → / Space เปลี่ยนสไลด์ · A เฉลยทีละข้อ · Shift+A เฉลยทั้งหมด · H ซ่อนเฉลย · F เต็มจอ${teacher ? " · N โน้ตครู (โน้ตไม่แสดงตอนเต็มจอ)" : ""}</p>`;
+  let keys = [];
+  const kcount = () => { $("#kc", el).textContent = keys.length ? `เฉลยแล้ว ${keys.filter(x => x.classList.contains("on")).length} / ${keys.length}` : ""; };
+  const kstep = () => { const nx = keys.find(x => !x.classList.contains("on")); if (nx) revealOne(nx, $("#ksp", el).checked); else toast("เฉลยครบทุกข้อแล้ว"); kcount(); };
+  const kall = () => { keys.filter(x => !x.classList.contains("on")).forEach((x, n) => setTimeout(() => { revealOne(x, false); kcount(); }, n * 280)); };
+  const khide = () => { keys.forEach(x => x.classList.remove("on")); kcount(); };
   const fit = () => { const st = $("#stg", el); if (st) $("#frm", el).style.transform = `scale(${st.clientWidth / 1920})`; };
-  const go = i => { TV.i = Math.max(0, Math.min(S.length - 1, i)); $("#frm", el).innerHTML = S[TV.i].html; $("#ct", el).textContent = `${TV.i + 1} / ${S.length}`; $("#nts", el).innerHTML = `<b>สไลด์ ${TV.i + 1}:</b> ${esc(S[TV.i].notes)}`; fit(); };
-  $("#pv", el).onclick = $("#tl", el).onclick = () => go(TV.i - 1);
-  $("#nx", el).onclick = $("#tr", el).onclick = () => go(TV.i + 1);
-  $("#nt", el).onclick = () => $("#nts", el).classList.toggle("hide");
+  const go = i => {
+    cur = Math.max(0, Math.min(S.length - 1, i)); LS.set(pkey() + ":" + keyName, cur);
+    $("#frm", el).innerHTML = S[cur].html; keys = prepAnswers($("#frm", el), S[cur].id);
+    $("#kbar", el).classList.toggle("hide", !keys.length); kcount();
+    $("#ct", el).textContent = `หน้า ${cur + 1} / ${S.length}`;
+    if (teacher) $("#nts", el).innerHTML = `<b>สไลด์ ${cur + 1}:</b> ${esc(S[cur].notes)}`;
+    $$("#pkr button, #pk button", el).forEach(b => b.classList.toggle("on", +b.dataset.n === cur));
+    const on = $(`#pkr button[data-n="${cur}"]`, el); if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" });
+    $("#pv", el).disabled = cur === 0; $("#nx", el).disabled = cur === S.length - 1;
+    fit();
+  };
+  const pick = e => { const b = e.target.closest("button[data-n]"); if (b) { go(+b.dataset.n); $("#pk", el).classList.add("hide"); } };
+  $("#pkr", el).onclick = pick; $("#pk", el).onclick = pick;
+  $("#pkt", el).onclick = () => $("#pk", el).classList.toggle("hide");
+  $("#pv", el).onclick = $("#tl", el).onclick = () => go(cur - 1);
+  $("#nx", el).onclick = $("#tr", el).onclick = () => go(cur + 1);
+  if (teacher) $("#nt", el).onclick = () => $("#nts", el).classList.toggle("hide");
+  $("#k1", el).onclick = kstep; $("#ka", el).onclick = kall; $("#kh", el).onclick = khide;
   $("#fs", el).onclick = () => { const f = $("#svf", el); try { document.fullscreenElement ? document.exitFullscreen() : f.requestFullscreen().catch(() => toast("เปิดเต็มจอไม่ได้")); } catch (e) { toast("เปิดเต็มจอไม่ได้"); } };
   window.onresize = fit; document.onfullscreenchange = () => setTimeout(fit, 60);
-  document.onkeydown = e => { if (!$("#frm")) return; if (["ArrowRight", " ", "PageDown"].includes(e.key)) { e.preventDefault(); go(TV.i + 1); } else if (["ArrowLeft", "PageUp"].includes(e.key)) go(TV.i - 1); else if (/^[fF]$/.test(e.key)) $("#fs", el).click(); else if (/^[nN]$/.test(e.key)) $("#nt", el).click(); };
-  go(TV.i);
+  document.onkeydown = e => {
+    if (!$("#frm") || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (["ArrowRight", " ", "PageDown"].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+    else if (["ArrowLeft", "PageUp"].includes(e.key)) go(cur - 1);
+    else if (e.key === "Home") go(0); else if (e.key === "End") go(S.length - 1);
+    else if (e.key === "A" || (e.key === "a" && e.shiftKey)) kall(); else if (e.key === "a") kstep(); else if (/^[hH]$/.test(e.key)) khide();
+    else if (/^[fF]$/.test(e.key)) $("#fs", el).click(); else if (teacher && /^[nN]$/.test(e.key)) $("#nt", el).click();
+  };
+  go(cur);
+}
+function tSlides(el) { slideViewer(el, true); }
+function viewSlides() {
+  const v = $("#v-station"); v.style.setProperty("--c", "var(--rose)");
+  v.innerHTML = `<div class="sh"><img src="${ICON("u6")}" alt=""><div><span class="k">ทบทวนด้วยตนเอง</span><h2>สไลด์บทเรียน Unit 6</h2></div></div><div id="sb"></div>
+    <div class="qnav"><a class="btn" href="#map">← แผนที่บทเรียน</a></div>`;
+  show("station"); slideViewer($("#sb", v), false);
 }
 async function tResults(el) {
   el.innerHTML = `<div class="card" style="max-width:520px"><h3>ใส่ PIN ครู</h3><p class="muted">นักเรียนส่งคะแนนได้อย่างเดียว อ่านผลได้เฉพาะผู้มี PIN</p>
@@ -889,15 +994,17 @@ function route() {
   stopSay(); document.onkeydown = null; window.onresize = null;
   const h = (location.hash || "").slice(1);
   if (h === "teacher") return viewTeacher();
-  if (!me) return viewStart();
+  if (!me) { if (!window.M3_PREVIEW) { location.replace("../index.html#login"); return; } return viewStart(); }
   if (!P) loadP();
   if (h === "start") return viewStart();
   if (SK[h]) return station(h);
   if (h === "posttest") return viewPost();
+  if (h === "slides") return viewSlides();
   if (h === "summary") return viewSummary();
   viewMap();
 }
 whoLine(); if (me) loadP();
+if (window.M3_PREVIEW) { const t = document.getElementById("tocLink"); if (t) t.remove(); }
 window.addEventListener("hashchange", route);
 route();
 flushQueue();

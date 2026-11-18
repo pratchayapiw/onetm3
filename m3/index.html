@@ -3,45 +3,122 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บทเรียนภาษาอังกฤษ ม.3 · Get Involved!</title>
+<title>English M.3 · Get Involved!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="unit6/app.css">
 <style>
-.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:16px}
-.u{position:relative;background:#fff;border-radius:24px;padding:18px;box-shadow:var(--shadow);border-top:6px solid var(--c);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px}
+.nav{display:flex;gap:8px}
+.nav a{border-radius:999px;padding:8px 16px;font:500 16px Kanit;text-decoration:none;color:var(--muted);border:2px solid var(--line);background:#fff}
+.nav a.on{background:var(--rose);border-color:var(--rose);color:#fff}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.role{border:3px solid var(--line);background:#fff;border-radius:24px;padding:20px;text-align:left;display:flex;gap:14px;align-items:center;font-size:17px;color:var(--ink)}
+.role.on{border-color:var(--rose);background:var(--blush)}
+.role img{width:76px;height:60px;object-fit:contain}
+.role b{display:block;font:600 22px Kanit}
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:16px}
+.u{position:relative;background:#fff;border-radius:24px;padding:18px;box-shadow:var(--shadow);border-top:6px solid var(--c);color:var(--ink);display:flex;flex-direction:column;gap:6px}
 .u .no{font:700 15px Kanit;color:var(--c)}
 .u b{font:600 22px Kanit}
 .u small{color:var(--muted);font-size:14px;line-height:1.45}
 .u .tag{position:absolute;top:14px;right:14px;font:600 12px Kanit;border-radius:10px;padding:2px 10px;background:var(--c);color:#fff}
-.u.off{opacity:.62}
-.u.off .tag{background:#b9a6b0}
+.u.off{opacity:.62}.u.off .tag{background:#b9a6b0}
 .u img{width:84px;height:66px;object-fit:contain}
+.u .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px}
+.how div{background:var(--blush);border-radius:18px;padding:14px}
+.how b{font:600 18px Kanit;display:block}
+.nav a{white-space:nowrap}
+@media (max-width:720px){.roles{grid-template-columns:1fr}.nav a{padding:6px 10px;font-size:14px}.top .logo b{font-size:14px}}
 </style>
 </head>
 <body>
-<header class="top"><div class="in"><span class="logo"><img src="assets/icons/openbook.png" alt=""><span><b>English M.3 · Get Involved!</b><small>อ23102 ภาษาอังกฤษพื้นฐาน 6 · ภาคเรียนที่ 2/2569</small></span></span></div></header>
+<header class="top"><div class="in">
+  <a class="logo" href="#contents"><img src="assets/icons/openbook.png" alt=""><span><b>English M.3 · Get Involved!</b><small>อ23102 ภาษาอังกฤษพื้นฐาน 6 · ภาคเรียนที่ 2/2569</small></span></a>
+  <span class="sp"></span>
+  <nav class="nav"><a href="#login" data-v="login">เข้าใช้ระบบ</a><a href="#contents" data-v="contents">สารบัญ</a></nav>
+</div></header>
 <main class="wrap">
-  <div class="hero"><img src="assets/icons/u6.png" alt=""><div>
-    <p class="pill">บทเรียนสำเร็จรูป + สไลด์สอน</p><h1>เรียน ฝึก ทบทวน ได้ด้วยตัวเอง</h1>
-    <p class="q">แต่ละบทมี 6 สถานี: คำศัพท์ · ฟัง · อ่าน · ไวยากรณ์ · พูด · เขียน และข้อสอบหลังเรียน · คะแนนเก็บบทละ 10 คะแนน</p></div></div>
-  <div class="units" id="units"></div>
-  <p class="muted" style="margin-top:18px;font-size:15px">เลขบทตรงกับหนังสือ Get Involved! ม.3 · เทอม 2 เรียน Unit 6–8 · Grammar bootcamp p116 · Pronunciation p128</p>
+  <section class="view" id="v-login"></section>
+  <section class="view" id="v-contents"></section>
 </main>
 <script>
+(function () {
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
 const UNITS = [
-  [1, "Stories", "Simple present · frequency · present progressive", "#e2457a", 1],
-  [2, "Then and now", "was/were · could · simple past · used to", "#e8763a", 1],
-  [3, "Goals", "Past progressive · when and while", "#e7a21d", 1],
-  [4, "Spend!", "Quantifiers · comparatives and superlatives", "#8b5cd6", 1],
-  [5, "A better place", "will · might · first and zero conditional", "#4f9b3a", 1],
-  [6, "Experience", "Present perfect · ever and never · who/where/which", "#3a7fd0", 2, "unit6/"],
-  [7, "My stuff", "Present perfect with for and since · time expressions", "#d9467a", 2],
-  [8, "Responsibility", "have to · will and going to", "#3a8fd0", 2]
+  { n: 1, t: "Stories", g: "Simple present · frequency · present progressive", c: "#e2457a", term: 1 },
+  { n: 2, t: "Then and now", g: "was/were · could · simple past · used to", c: "#e8763a", term: 1 },
+  { n: 3, t: "Goals", g: "Past progressive · when and while", c: "#e7a21d", term: 1 },
+  { n: 4, t: "Spend!", g: "Quantifiers · comparatives and superlatives", c: "#8b5cd6", term: 1 },
+  { n: 5, t: "A better place", g: "will · might · first and zero conditional", c: "#4f9b3a", term: 1 },
+  { n: 6, t: "Experience", g: "Present perfect · ever and never · who/where/which", c: "#3a7fd0", term: 2, dir: "unit6/", id: "unit6", icon: "u6",
+    points: { vocab: 2, listening: 2, reading: 1, grammar: 2, speaking: 1.5, writing: 1.5 } },
+  { n: 7, t: "My stuff", g: "Present perfect with for and since · time expressions", c: "#d9467a", term: 2 },
+  { n: 8, t: "Responsibility", g: "have to · will and going to", c: "#3a8fd0", term: 2 }
 ];
-document.getElementById("units").innerHTML = UNITS.map(([n, t, g, c, term, href]) => href
-  ? `<a class="u" href="${href}" style="--c:${c}"><span class="tag">เปิดเรียน</span><img src="assets/icons/u6.png" alt=""><span class="no">บทที่ ${n} · Unit ${n}</span><b>${t}</b><small>${g}</small><small>เทอม ${term}</small></a>`
-  : `<div class="u off" style="--c:${c}"><span class="tag">เร็ว ๆ นี้</span><span class="no">บทที่ ${n} · Unit ${n}</span><b>${t}</b><small>${g}</small><small>เทอม ${term}</small></div>`).join("");
+let me = LS.get("m3:me", null), role = LS.get("m3:role", me ? "student" : null);
+
+function unitScore(u) {
+  if (!me || !u.points) return null;
+  const P = LS.get(`m3:${u.id}:${[me.name, me.cls, me.no].join("|")}`, null); if (!P || !P.quiz) return { total: 0, done: 0 };
+  let total = 0, done = 0; for (const k in u.points) { const q = P.quiz[k]; if (q && q.first) { total += u.points[k] * q.first.s / q.first.m; done++; } }
+  return { total, done };
+}
+function viewLogin() {
+  $("#v-login").innerHTML = `<div class="hero"><img src="assets/icons/u6.png" alt=""><div>
+      <p class="pill">บทเรียนสำเร็จรูป + สไลด์สอน</p><h1>เข้าใช้ระบบ</h1>
+      <p class="q">เลือกว่าเป็นนักเรียนหรือครู ลงชื่อครั้งเดียว ใช้ได้ทุกบท</p></div></div>
+    <div class="card">
+      <div class="roles"><button class="role ${role === "student" ? "on" : ""}" data-r="student"><img src="assets/icons/az.png" alt=""><span><b>นักเรียน</b>เรียน ฝึก ทำข้อสอบย่อย ส่งคะแนนให้ครู</span></button>
+        <button class="role ${role === "teacher" ? "on" : ""}" data-r="teacher"><img src="assets/icons/clipboard.png" alt=""><span><b>ครู</b>สไลด์สอน โน้ตครู แอนิเมชันเฉลย ผลนักเรียน (ใช้รหัสครู)</span></button></div>
+      <div id="rf" style="margin-top:16px"></div></div>
+    <div class="card" style="margin-top:16px"><h3>วิธีใช้</h3><div class="how">
+      <div><b>1 · เข้าใช้ระบบ</b>นักเรียนกรอกชื่อ ห้อง เลขที่ ให้ตรงกับรายชื่อ</div>
+      <div><b>2 · สารบัญ</b>เลือกบทเรียนตามหนังสือ Get Involved! ม.3</div>
+      <div><b>3 · บทเรียน</b>เรียน 6 สถานี + สไลด์บทเรียน (เลือกหน้าได้) + ข้อสอบหลังเรียน</div>
+      <div><b>4 · ทบทวน</b>กลับมาเปิดสไลด์และแบบฝึกซ้ำได้ตลอด ระบบจำความคืบหน้าในเครื่อง</div></div></div>`;
+  const form = () => {
+    const rf = $("#rf");
+    if (role === "teacher") { rf.innerHTML = `<p>ครูเลือกบทในสารบัญ แล้วกด <b>👩‍🏫 โหมดครู</b> ใส่รหัสครู เพื่อเปิดสไลด์สอน โน้ตครู และผลนักเรียน</p><a class="btn p" href="#contents">ไปที่สารบัญ →</a>`; return; }
+    if (role !== "student") { rf.innerHTML = ""; return; }
+    rf.innerHTML = `<form id="f" class="opts" style="max-width:560px">
+      <input class="inp" name="name" placeholder="ชื่อ–นามสกุล" maxlength="80" required value="${me ? esc(me.name) : ""}">
+      <div class="row"><input class="inp" name="cls" placeholder="ห้อง เช่น ม.3/1" maxlength="20" required style="flex:1" value="${me ? esc(me.cls) : ""}">
+      <input class="inp" name="no" placeholder="เลขที่" maxlength="10" required inputmode="numeric" style="width:120px" value="${me ? esc(me.no) : ""}"></div>
+      <div class="row"><button class="btn p" type="submit">${me ? "บันทึกและไปที่สารบัญ →" : "เข้าใช้ระบบ →"}</button>${me ? `<button class="btn" type="button" id="out">ออกจากระบบ</button>` : ""}</div></form>`;
+    $("#f").onsubmit = e => { e.preventDefault(); const f = new FormData(e.target);
+      me = { name: f.get("name").trim(), cls: f.get("cls").trim(), no: f.get("no").trim() }; if (!me.name || !me.cls || !me.no) return;
+      LS.set("m3:me", me); LS.set("m3:role", "student"); location.hash = "#contents"; };
+    const out = $("#out"); if (out) out.onclick = () => { LS.del("m3:me"); me = null; viewLogin(); };
+  };
+  $("#v-login").querySelector(".roles").onclick = e => { const b = e.target.closest("[data-r]"); if (!b) return; role = b.dataset.r; LS.set("m3:role", role);
+    document.querySelectorAll(".role").forEach(x => x.classList.toggle("on", x === b)); form(); };
+  form();
+}
+function viewContents() {
+  $("#v-contents").innerHTML = `<div class="hero"><img src="assets/icons/openbook.png" alt=""><div>
+      <p class="pill">สารบัญ · Get Involved! ม.3</p><h1>${me ? "สวัสดี " + esc(me.name) : "สารบัญบทเรียน"}</h1>
+      <p class="q">${me ? esc(me.cls) + " เลขที่ " + esc(me.no) + " · " : ""}แต่ละบทมี 6 สถานี (ศัพท์ ฟัง อ่าน ไวยากรณ์ พูด เขียน) สไลด์บทเรียน และข้อสอบหลังเรียน · คะแนนเก็บบทละ 10</p>
+      ${!me ? `<a class="btn p" href="#login" style="margin-top:10px">เข้าใช้ระบบก่อนเริ่มเรียน →</a>` : ""}</div></div>
+    <div class="units">${UNITS.map(u => { const sc = unitScore(u);
+      return u.dir ? `<div class="u" style="--c:${u.c}"><span class="tag">เปิดเรียน</span><img src="assets/icons/${u.icon}.png" alt=""><span class="no">บทที่ ${u.n} · Unit ${u.n} · เทอม ${u.term}</span><b>${u.t}</b><small>${u.g}</small>
+        ${sc ? `<small><b style="font-size:16px;color:var(--c)">${sc.total.toFixed(2)} / 10</b> · ข้อสอบย่อย ${sc.done}/6</small>` : ""}
+        <div class="acts"><a class="btn s p" href="${u.dir}#map">📖 เข้าบทเรียน</a><a class="btn s" href="${u.dir}#slides">📽️ สไลด์บทเรียน</a><a class="btn s" href="${u.dir}#teacher">👩‍🏫 โหมดครู</a></div></div>`
+      : `<div class="u off" style="--c:${u.c}"><span class="tag">เร็ว ๆ นี้</span><span class="no">บทที่ ${u.n} · Unit ${u.n} · เทอม ${u.term}</span><b>${u.t}</b><small>${u.g}</small></div>`; }).join("")}</div>
+    <p class="muted" style="margin-top:18px;font-size:15px">เลขบทตรงกับหนังสือ · เทอม 2 เรียน Unit 6–8 · Grammar bootcamp p116 · Pronunciation p128</p>`;
+}
+function route() {
+  const h = (location.hash || "").slice(1);
+  const v = h === "login" || (!h && !me && role !== "teacher") ? "login" : "contents";
+  if (v === "login") viewLogin(); else viewContents();
+  document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === "v-" + v));
+  document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("on", a.dataset.v === v));
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route); route();
+})();
 </script>
 </body>
 </html>
