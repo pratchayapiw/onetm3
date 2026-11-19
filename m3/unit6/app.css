@@ -198,3 +198,9 @@ table.res th{background:var(--rose);color:#fff;font:500 14px Kanit;position:stic
 @media (max-width:720px){.top .in{gap:6px;padding:8px 10px}.top .btn.s{padding:6px 9px;font-size:13px;min-height:36px}.top .logo small{display:none}.top .logo b{font-size:15px}.top .logo img{width:40px;height:32px}.spick-bar .btn.s{font-size:13px}}
 .btn{white-space:nowrap}
 @media (max-width:720px){.top .t{display:none}.top .btn.s{font-size:18px}.qnav{flex-wrap:wrap}.qnav .btn{padding:8px 12px;font-size:15px;min-height:42px}.qnav .row{gap:8px}#kbar .btn{padding:8px 12px;font-size:15px;min-height:42px}}
+
+/* themed lesson background (scene per unit, set with --theme on <body>) */
+body.themed{background:var(--theme) center bottom/100% auto no-repeat fixed,linear-gradient(160deg,#fff6f8 0%,#fdeef2 60%,#f3f8ff 100%)}
+body.themed .hero{background-image:linear-gradient(90deg,rgba(255,255,255,.97) 30%,rgba(255,255,255,.35) 100%),var(--theme);background-size:cover;background-position:center 85%}
+body.themed .card,body.themed .st{background-color:rgba(255,255,255,.96)}
+@media (max-width:720px){body.themed{background-size:220% auto;background-attachment:scroll}body.themed .hero{background-image:linear-gradient(180deg,rgba(255,255,255,.95) 45%,rgba(255,255,255,.5)),var(--theme)}}

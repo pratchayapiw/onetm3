@@ -24,6 +24,8 @@
 .u .tag{position:absolute;top:14px;right:14px;font:600 12px Kanit;border-radius:10px;padding:2px 10px;background:var(--c);color:#fff}
 .u.off{opacity:.62}.u.off .tag{background:#b9a6b0}
 .u img{width:84px;height:66px;object-fit:contain}
+.u .ub{margin:-18px -18px 6px;height:110px;border-radius:18px 18px 0 0;background-size:cover;background-position:center 88%}
+.u .tag{z-index:1}
 .u .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px}
 .how div{background:var(--blush);border-radius:18px;padding:14px}
@@ -103,10 +105,10 @@ function viewContents() {
       <p class="q">${me ? esc(me.cls) + " เลขที่ " + esc(me.no) + " · " : ""}แต่ละบทมี 6 สถานี (ศัพท์ ฟัง อ่าน ไวยากรณ์ พูด เขียน) สไลด์บทเรียน และข้อสอบหลังเรียน · คะแนนเก็บบทละ 10</p>
       ${!me ? `<a class="btn p" href="#login" style="margin-top:10px">เข้าใช้ระบบก่อนเริ่มเรียน →</a>` : ""}</div></div>
     <div class="units">${UNITS.map(u => { const sc = unitScore(u);
-      return u.dir ? `<div class="u" style="--c:${u.c}"><span class="tag">เปิดเรียน</span><img src="assets/icons/${u.icon}.png" alt=""><span class="no">บทที่ ${u.n} · Unit ${u.n} · เทอม ${u.term}</span><b>${u.t}</b><small>${u.g}</small>
+      return u.dir ? `<div class="u" style="--c:${u.c}"><span class="tag">เปิดเรียน</span><div class="ub" style="background-image:url(assets/bg/unit${u.n}.svg)"></div><span class="no">บทที่ ${u.n} · Unit ${u.n} · เทอม ${u.term}</span><b>${u.t}</b><small>${u.g}</small>
         ${sc ? `<small><b style="font-size:16px;color:var(--c)">${sc.total.toFixed(2)} / 10</b> · ข้อสอบย่อย ${sc.done}/6</small>` : ""}
         <div class="acts"><a class="btn s p" href="${u.dir}#map">📖 เข้าบทเรียน</a><a class="btn s" href="${u.dir}#slides">📽️ สไลด์บทเรียน</a><a class="btn s" href="${u.dir}#teacher">👩‍🏫 โหมดครู</a></div></div>`
-      : `<div class="u off" style="--c:${u.c}"><span class="tag">เร็ว ๆ นี้</span><span class="no">บทที่ ${u.n} · Unit ${u.n} · เทอม ${u.term}</span><b>${u.t}</b><small>${u.g}</small></div>`; }).join("")}</div>
+      : `<div class="u off" style="--c:${u.c}"><span class="tag">เร็ว ๆ นี้</span><div class="ub" style="background-image:url(assets/bg/unit${u.n}.svg)"></div><span class="no">บทที่ ${u.n} · Unit ${u.n} · เทอม ${u.term}</span><b>${u.t}</b><small>${u.g}</small></div>`; }).join("")}</div>
     <p class="muted" style="margin-top:18px;font-size:15px">เลขบทตรงกับหนังสือ · เทอม 2 เรียน Unit 6–8 · Grammar bootcamp p116 · Pronunciation p128</p>`;
 }
 function route() {
