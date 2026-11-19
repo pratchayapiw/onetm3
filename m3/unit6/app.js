@@ -48,6 +48,7 @@ async function postRow(row) {
   if (!r.ok) throw new Error("HTTP " + r.status);
 }
 async function send(row) {
+  if (me && me.demo) return true;   // teacher trying the lesson: nothing is sent
   row = Object.assign({ unit: U.id, student_name: me.name, class: me.cls, student_no: me.no }, row);
   try { await postRow(row); return true; }
   catch (e) { const q = queue(); q.push(row); LS.set("m3:queue", q.slice(-50)); return false; }
@@ -815,7 +816,7 @@ function viewSummary() {
 }
 
 /* ================= TEACHER ================= */
-let TV = { tab: "slides", i: 0, pin: "", rows: null };
+let TV = { tab: "slides", i: 0, pin: (() => { try { return sessionStorage.getItem("m3:tp") || ""; } catch (e) { return ""; } })(), rows: null };
 const TEACHER_HASH = "70300ccd47da1a93cc88b1fe027be4dd37727d3d7805f238dd5009f1a9a87d8a";
 async function sha(t) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join(""); }
 function teacherOk() { try { return sessionStorage.getItem("m3:t") === "1"; } catch (e) { return TV.ok; } }
@@ -994,6 +995,8 @@ function route() {
   stopSay(); document.onkeydown = null; window.onresize = null;
   const h = (location.hash || "").slice(1);
   if (h === "teacher") return viewTeacher();
+  if (h === "teacher-results") { TV.tab = "results"; return viewTeacher(); }
+  if (!me && teacherOk()) { me = { name: "ครู (ทดลองใช้)", cls: "ครู", no: "0", demo: true }; loadP(); whoLine(); }
   if (!me) { if (!window.M3_PREVIEW) { location.replace("../index.html#login"); return; } return viewStart(); }
   if (!P) loadP();
   if (h === "start") return viewStart();
